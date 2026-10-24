@@ -12,14 +12,19 @@ final class Registry {
 
     struct Listener {
         let id: Int
+        let zone: ZoneID?
         let handler: @CordisActor (Any) async -> Void
     }
 
     private var slots: [Slot: Entry] = [:]
     private var forks: [ObjectIdentifier: Fork] = [:]
+    private var forkOrder: [ObjectIdentifier: Int] = [:]
+    private var forkCounter = 0
     private(set) var listeners: [ObjectIdentifier: [Listener]] = [:]
     private var generation = 0
     private var listenerCounter = 0
+    private var zoneParents: [ZoneID: ZoneID?] = [:]
+    private var zoneChildren: [ZoneKey: ZoneID] = [:]
 
     // MARK: Services
 
@@ -69,17 +74,48 @@ final class Registry {
 
     func register(_ fork: Fork) {
         forks[fork.id] = fork
+        forkCounter += 1
+        forkOrder[fork.id] = forkCounter
     }
 
     func unregister(_ fork: Fork) {
         forks[fork.id] = nil
+        forkOrder[fork.id] = nil
+    }
+
+    func snapshot() -> RuntimeSnapshot {
+        let plugins = forks.values
+            .sorted { (forkOrder[$0.id] ?? 0) < (forkOrder[$1.id] ?? 0) }
+            .map { fork in
+                PluginInfo(
+                    id: PluginID(fork.id),
+                    name: fork.name,
+                    status: fork.status,
+                    parent: fork.parent.fork.map { PluginID($0.id) }
+                )
+            }
+        let slotInfos = slots
+            .sorted { $0.value.generation < $1.value.generation }
+            .map { slot, entry in
+                SlotInfo(
+                    service: slot.service.description,
+                    realm: slot.realm,
+                    provider: entry.fork.map(PluginID.init),
+                    generation: entry.generation
+                )
+            }
+        return RuntimeSnapshot(plugins: plugins, slots: slotInfos)
     }
 
     // MARK: Events
 
-    func on<E: Event>(_ type: E.Type, _ handler: @escaping @CordisActor (E) async -> Void) -> Int {
+    func on<E: Event>(
+        _ type: E.Type,
+        zone: ZoneID?,
+        _ handler: @escaping @CordisActor (E) async -> Void
+    ) -> Int {
         listenerCounter += 1
-        let listener = Listener(id: listenerCounter) { any in
+        let listener = Listener(id: listenerCounter, zone: zone) { any in
             if let event = any as? E { await handler(event) }
         }
         listeners[ObjectIdentifier(type), default: []].append(listener)
@@ -90,9 +126,30 @@ final class Registry {
         listeners[ObjectIdentifier(type)]?.removeAll { $0.id == id }
     }
 
-    func emit<E: Event>(_ event: E) async {
+    func zone(_ label: String, under parent: ZoneID?) -> ZoneID {
+        let key = ZoneKey(parent: parent, label: label)
+        if let existing = zoneChildren[key] { return existing }
+
+        let id = ZoneID(rawValue: zoneParents.count)
+        zoneParents[id] = .some(parent)
+        zoneChildren[key] = id
+        return id
+    }
+
+    private func isAncestorOrSelf(_ candidate: ZoneID, of zone: ZoneID?) -> Bool {
+        var current = zone
+        while let id = current {
+            if id == candidate { return true }
+            current = zoneParents[id] ?? nil
+        }
+        return false
+    }
+
+    func emit<E: Event>(_ event: E, from zone: ZoneID? = nil) async {
         // Snapshot: listeners added/removed during dispatch don't affect this round.
         for listener in listeners[ObjectIdentifier(E.self)] ?? [] {
+            if let listenerZone = listener.zone, !isAncestorOrSelf(listenerZone, of: zone) { continue }
+
             await listener.handler(event)
         }
     }
@@ -102,4 +159,13 @@ extension Registry {
     func listenerCount<E: Event>(for type: E.Type) -> Int {
         listeners[ObjectIdentifier(type)]?.count ?? 0
     }
+}
+
+struct ZoneID: Hashable {
+    let rawValue: Int
+}
+
+private struct ZoneKey: Hashable {
+    let parent: ZoneID?
+    let label: String
 }
