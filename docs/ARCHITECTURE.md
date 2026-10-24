@@ -81,6 +81,15 @@ that is mid-mutation cannot stall disposal. Timers are therefore cancelled on sc
 restart and update. The clock is injectable (`some Clock<Duration>`, default `ContinuousClock`); tests use a manual clock.
 Tick bodies are non-throwing in this version.
 
+## Update semantics
+
+`PluginHandle.update` is a no-op when the fork is `.active` and the new config equals the last successfully applied one
+(runtime `Equatable` check; non-`Equatable` configs always restart). The applied config is recorded only when the fork
+reaches `.active`, so retrying the same config after a failed apply re-runs `apply`.
+There is deliberately no `replace` / era-swap equivalent: cordis-rs fixes dependency edges for an era and needs a swap to
+retarget them, whereas `Fork.resolve()` re-reads the edges on every reconcile, so a plain restart already retargets.
+Dispose and load again for a fresh identity.
+
 ## Tests
 
 `swift test`: `CordisKernelTests` covers scope, graph, lifecycle and cascade invariants; `CordisTests` covers `ServicePlugin` and timers.

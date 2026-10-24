@@ -40,6 +40,8 @@ public enum UpdateOutcome: Sendable {
     case applied
     /// Validation threw; the running instance was left untouched.
     case rejected(any Error)
+    /// The plugin is active and the config equals the last applied one, so nothing was restarted.
+    case unchanged
 }
 
 /// One application of a plugin in a given context (Cordis calls this a "fork").
@@ -62,6 +64,8 @@ public final class Fork {
     let parent: Context
     private let registry: Registry
     private var body: @CordisActor (Context) async throws -> Void
+    private var config: Any?
+    private var appliedConfig: Any?
 
     private struct Runtime {
         let context: Context
@@ -77,8 +81,10 @@ public final class Fork {
         name: String,
         inject: Inject,
         parent: Context,
+        config: Any? = nil,
         body: @escaping @CordisActor (Context) async throws -> Void
     ) {
+        self.config = config
         self.name = name
         self.inject = inject
         self.parent = parent
@@ -158,7 +164,10 @@ public final class Fork {
         await setStatus(.loading)
         do {
             try await body(ctx)
-            if status == .loading { await setStatus(.active) }
+            if status == .loading {
+                appliedConfig = config
+                await setStatus(.active)
+            }
         } catch {
             await stop()
             await setStatus(.failed(String(describing: error)))
@@ -182,11 +191,19 @@ public final class Fork {
 
     // MARK: Public controls
 
-    /// Replaces the plugin body (new config) and restarts if running.
-    func reconfigure(_ body: @escaping @CordisActor (Context) async throws -> Void) async {
+    /// Replaces the plugin body (new config) and restarts if running, unless the config equals the last
+    /// applied one.
+    func reconfigure(
+        config: Any,
+        _ body: @escaping @CordisActor (Context) async throws -> Void
+    ) async -> Bool {
+        if status == .active, let appliedConfig, isEqual(appliedConfig, config) { return false }
+
+        self.config = config
         self.body = body
         forceRestart = true
         await refresh()
+        return true
     }
 
     public func dispose() async {
@@ -208,6 +225,8 @@ public struct PluginHandle<P: Plugin> {
     }
 
     /// Hot-reconfigure: validates the config, then tears the plugin down and re-applies it.
+    /// A no-op (`.unchanged`) when the plugin is active and an `Equatable` config equals the last applied
+    /// one.
     @discardableResult
     public func update(_ config: P.Config) async -> UpdateOutcome {
         do {
@@ -215,12 +234,25 @@ public struct PluginHandle<P: Plugin> {
         } catch {
             return .rejected(error)
         }
-        await fork.reconfigure { ctx in try await P.apply(ctx, config: config) }
-        return .applied
+        let restarted = await fork
+            .reconfigure(config: config) { ctx in try await P.apply(ctx, config: config) }
+        return restarted ? .applied : .unchanged
     }
 
     /// Hot-unload: every side effect of this plugin (and its sub-plugins) is rolled back.
     public func dispose() async {
         await fork.dispose()
     }
+}
+
+private func isEqual(_ lhs: Any, _ rhs: Any) -> Bool {
+    guard let lhs = lhs as? any Equatable else { return false }
+
+    return isEqual(opened: lhs, rhs)
+}
+
+private func isEqual<T: Equatable>(opened lhs: T, _ rhs: Any) -> Bool {
+    guard let rhs = rhs as? T else { return false }
+
+    return lhs == rhs
 }
