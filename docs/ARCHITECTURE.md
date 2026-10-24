@@ -31,10 +31,34 @@ so reactive restarts are deterministic. Heavy work belongs inside the services, 
 A `Slot` is `(service, realm)`. `ctx.isolate(Key.self, label:)` returns a child context resolving that key in another realm.
 Same label = shared realm, no label = private anonymous realm.
 
+## Zones
+
+An optional event-routing axis, independent of `Scope`, realms and plugin lifetime. `ctx.zone("a")` returns a child context
+whose zone is a child of the current one (same label under the same parent = same zone); derived contexts
+(`isolate`, `zone`, plugins) inherit it. A listener is reached when it has no zone (global) or its zone is
+ancestor-or-self of the emit zone; an emit from no zone reaches only global listeners. The default is no zone.
+
+Zones are a routing convenience, **not an authorization boundary**: any code holding a context can create or emit into any zone.
+
+## Intercept
+
+`ctx.intercept(Key.self) { value in ... }` returns a child context holding an ordered list of layers for that service.
+Layers are inherited by `isolate` and by plugins loaded through the context. `provide` applies them at provide time,
+last-registered first, so the first-registered layer is the outermost wrapper; the registry stores the wrapped value
+with a single generation bump. Layers are never retroactive: values already provided are untouched, and adding a layer
+restarts nothing. The closure is non-throwing; conflict behaviour is unchanged.
+
+Alternative with no kernel support: a decorator plugin that injects the base service under one key and provides the
+wrapped value under a second key.
+
 ## Failure model
 
 `apply` throwing rolls back the fork's scope, sets `.failed`, and emits `PluginFailed`. The rest of the graph keeps running.
 Two different contexts providing the same slot raise `CordisError.serviceConflict`; the second plugin fails.
+
+Teardowns (`Disposer`) may throw. `Scope.dispose()` still runs every teardown in reverse order, and each thrown error is
+emitted once as `TeardownFailed(plugin:error:)` (`plugin` is the owning context name, `root` for the graph root).
+`Disposable()` itself never throws.
 
 ## Snapshot
 

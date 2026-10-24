@@ -14,6 +14,8 @@ public final class Context {
     public let parent: Context?
     let fork: Fork?
     private var realms: [ServiceID: String]
+    private var layers: [ServiceID: [@CordisActor (Any) -> Any]]
+    let zoneID: ZoneID?
 
     public var name: String {
         fork?.name ?? "root"
@@ -24,18 +26,26 @@ public final class Context {
         parent: Context?,
         fork: Fork?,
         scope: Scope,
-        realms: [ServiceID: String]? = nil
+        realms: [ServiceID: String]? = nil,
+        layers: [ServiceID: [@CordisActor (Any) -> Any]]? = nil,
+        zoneID: ZoneID? = nil
     ) {
         self.registry = registry
         self.parent = parent
         self.fork = fork
         self.scope = scope
         self.realms = realms ?? parent?.realms ?? [:]
+        self.layers = layers ?? parent?.layers ?? [:]
+        self.zoneID = zoneID ?? parent?.zoneID
     }
 
     /// Creates the root of a new plugin graph (your "App").
     public static func root() -> Context {
-        Context(registry: Registry(), parent: nil, fork: nil, scope: Scope())
+        let registry = Registry()
+        let scope = Scope { error in
+            await registry.emit(TeardownFailed(plugin: "root", error: error))
+        }
+        return Context(registry: registry, parent: nil, fork: nil, scope: scope)
     }
 
     /// Tears down the whole graph, children first.
@@ -66,7 +76,9 @@ public final class Context {
         guard !scope.isDisposed else { throw CordisError.disposed }
 
         let slot = slot(for: K.id)
-        try await registry.provide(slot, value: value, by: self)
+        let wrapped = (layers[K.id] ?? []).reversed()
+            .reduce(value as Any) { current, layer in layer(current) }
+        try await registry.provide(slot, value: wrapped, by: self)
         let owner = ObjectIdentifier(self)
         let forkID = fork.map(ObjectIdentifier.init)
         scope.collect { [registry] in
@@ -82,7 +94,50 @@ public final class Context {
     public func isolate<K: ServiceKey>(_ key: K.Type, label: String? = nil) -> Context {
         var realms = realms
         realms[K.id] = label ?? registry.anonymousRealm()
-        return Context(registry: registry, parent: self, fork: fork, scope: scope, realms: realms)
+        return Context(
+            registry: registry,
+            parent: self,
+            fork: fork,
+            scope: scope,
+            realms: realms,
+            zoneID: zoneID
+        )
+    }
+
+    // MARK: Event routing — zones
+
+    /// Returns a child context in the zone `label` under this context's zone.
+    /// Listeners registered through it only hear events emitted from the same zone or a descendant;
+    /// listeners with no zone hear everything. Independent of scope and realms; not an authorization
+    /// boundary.
+    public func zone(_ label: String) -> Context {
+        Context(
+            registry: registry,
+            parent: self,
+            fork: fork,
+            scope: scope,
+            realms: realms,
+            zoneID: registry.zone(label, under: zoneID)
+        )
+    }
+
+    // MARK: Intercept
+
+    /// Returns a child context whose `provide` of `key` runs `layer` over the value first.
+    /// Layers are inherited by derived contexts and plugins; the first-registered layer is the outermost
+    /// wrapper.
+    /// Values already provided are never rewritten.
+    public func intercept<K: ServiceKey>(
+        _ key: K.Type,
+        _ layer: @escaping @CordisActor (K.Value) -> K.Value
+    ) -> Context {
+        var layers = layers
+        layers[K.id, default: []].append { current in
+            guard let typed = current as? K.Value else { return current }
+
+            return layer(typed)
+        }
+        return Context(registry: registry, parent: self, fork: fork, scope: scope, layers: layers)
     }
 
     // MARK: Composition
@@ -137,11 +192,11 @@ public final class Context {
         _ type: E.Type,
         _ handler: @escaping @CordisActor (E) async -> Void
     ) -> Disposable {
-        let id = registry.on(type, handler)
+        let id = registry.on(type, zone: zoneID, handler)
         return scope.collect { [registry] in registry.off(type, id: id) }
     }
 
     public func emit<E: Event>(_ event: E) async {
-        await registry.emit(event)
+        await registry.emit(event, from: zoneID)
     }
 }

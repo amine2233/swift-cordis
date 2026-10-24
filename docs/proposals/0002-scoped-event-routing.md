@@ -2,10 +2,10 @@
 id: "0002"
 title: "Scoped event routing"
 type: mini
-status: draft
+status: accepted
 authors: ["Amine BENSALAH <amine.bensalah@intech-consulting.fr>"]
 reviewers: []
-decider: ""
+decider: "Amine BENSALAH"
 created: 2026-10-24
 review-deadline: 2026-10-29
 discussion: ""
@@ -75,7 +75,9 @@ Compatibility: additive, nil default. Rollback: remove the axis. Security: not a
 
 ## Decision
 
-<!-- Filled at closing. -->
+**Accepted** on 2026-10-24 by Amine BENSALAH.
+
+Accepted by the decider, overriding the reviewer's "No" (no concrete case beyond realms plus a tenant field). Conditions resolving the blocking items: the axis is named *zone* (not scope) to avoid the `Scope` collision; `ctx.zone(_ label: String)` returns a child context whose zone is a child of the current one (same label under the same parent is the same zone); a listener reaches an event when its zone is ancestor-or-self of the emit zone, and a listener with no zone is global and reaches every event; an emit with no zone reaches only global listeners; the default is no zone, so existing behaviour is unchanged; zones are inherited by derived contexts and are independent of `Scope`, realms and plugin lifetime; zones are not an authorization boundary. Open question 1 resolved accordingly.
 
 ## Amendments
 
