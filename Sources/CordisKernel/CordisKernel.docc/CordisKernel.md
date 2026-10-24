@@ -57,4 +57,5 @@ All graph mutations run on the single global actor ``CordisActor``.
 - ``ServiceChanged``
 - ``PluginStatusChanged``
 - ``PluginFailed``
+- ``TeardownFailed``
 - ``CordisError``

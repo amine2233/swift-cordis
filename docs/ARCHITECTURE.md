@@ -36,6 +36,10 @@ Same label = shared realm, no label = private anonymous realm.
 `apply` throwing rolls back the fork's scope, sets `.failed`, and emits `PluginFailed`. The rest of the graph keeps running.
 Two different contexts providing the same slot raise `CordisError.serviceConflict`; the second plugin fails.
 
+Teardowns (`Disposer`) may throw. `Scope.dispose()` still runs every teardown in reverse order, and each thrown error is
+emitted once as `TeardownFailed(plugin:error:)` (`plugin` is the owning context name, `root` for the graph root).
+`Disposable()` itself never throws.
+
 ## Known limitation
 
 `Scope.collect` on an already-disposed scope runs the teardown in a `Task` (the signature is synchronous),

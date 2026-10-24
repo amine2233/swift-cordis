@@ -94,6 +94,13 @@ public struct PluginFailed: Event {
     public let error: any Error
 }
 
+/// Emitted when a teardown throws. Remaining teardowns of the same scope still run.
+/// `plugin` is the name of the owning context (`root` for the graph root).
+public struct TeardownFailed: Event {
+    public let plugin: String
+    public let error: any Error
+}
+
 /// Emitted on every plugin status transition (handy for a devtools/console plugin).
 public struct PluginStatusChanged: Event {
     public let plugin: String
