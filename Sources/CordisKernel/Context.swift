@@ -86,6 +86,18 @@ public final class Context {
         }
     }
 
+    /// Mutates, in place, the value this context published for `key`.
+    /// The occurrence is unchanged: dependents are not restarted and no `ServiceChanged` is emitted.
+    /// Throws `CordisError.notPublished` when this context did not publish `key`.
+    public func update<K: ServiceKey>(
+        _ key: K.Type,
+        _ mutate: (inout K.Value) -> Void
+    ) async throws {
+        guard !scope.isDisposed else { throw CordisError.disposed }
+
+        try registry.update(slot(for: K.id), as: K.Value.self, by: self, mutate)
+    }
+
     // MARK: Space — isolation
 
     /// Returns a child context where `key` resolves to a separate realm.

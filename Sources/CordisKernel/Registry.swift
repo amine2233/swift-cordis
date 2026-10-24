@@ -3,11 +3,12 @@
 @CordisActor
 final class Registry {
     struct Entry {
-        let value: Any
+        var value: Any
         let owner: ObjectIdentifier // providing Context
         let ownerName: String
         let fork: ObjectIdentifier? // providing Fork (nil = root)
         let generation: Int
+        let occurrence: OccurrenceID
     }
 
     struct Listener {
@@ -22,6 +23,7 @@ final class Registry {
     private var forkCounter = 0
     private(set) var listeners: [ObjectIdentifier: [Listener]] = [:]
     private var generation = 0
+    private var occurrenceCounter = 0
     private var listenerCounter = 0
     private var zoneParents: [ZoneID: ZoneID?] = [:]
     private var zoneChildren: [ZoneKey: ZoneID] = [:]
@@ -37,14 +39,32 @@ final class Registry {
             throw CordisError.serviceConflict(slot, existingOwner: existing.ownerName)
         }
         generation += 1
+        occurrenceCounter += 1
         slots[slot] = Entry(
             value: value,
             owner: ObjectIdentifier(ctx),
             ownerName: ctx.name,
             fork: ctx.fork.map(ObjectIdentifier.init),
-            generation: generation
+            generation: generation,
+            occurrence: OccurrenceID(rawValue: occurrenceCounter)
         )
         await changed(slot, isAvailable: true, fork: ctx.fork.map(ObjectIdentifier.init))
+    }
+
+    func update<Value>(
+        _ slot: Slot,
+        as type: Value.Type,
+        by ctx: Context,
+        _ mutate: (inout Value) -> Void
+    ) throws {
+        guard var entry = slots[slot], entry.owner == ObjectIdentifier(ctx) else {
+            throw CordisError.notPublished(slot)
+        }
+        guard var typed = entry.value as? Value else { throw CordisError.notPublished(slot) }
+
+        mutate(&typed)
+        entry.value = typed
+        slots[slot] = entry
     }
 
     func withdraw(_ slot: Slot, owner: ObjectIdentifier, fork: ObjectIdentifier?) async {
@@ -159,6 +179,11 @@ extension Registry {
     func listenerCount<E: Event>(for type: E.Type) -> Int {
         listeners[ObjectIdentifier(type)]?.count ?? 0
     }
+}
+
+/// Identity of one successful `provide`; stable across in-place updates.
+struct OccurrenceID: Hashable {
+    let rawValue: Int
 }
 
 struct ZoneID: Hashable {

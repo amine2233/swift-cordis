@@ -52,7 +52,7 @@ public final class Fork {
 
     private struct Runtime {
         let context: Context
-        let snapshot: [Slot: Int]
+        let snapshot: [Slot: OccurrenceID?]
     }
 
     private var runtime: Runtime?
@@ -84,22 +84,22 @@ public final class Fork {
         inject.all.contains { parent.slot(for: $0) == slot }
     }
 
-    /// Current generations of every injected slot, or `nil` if a required one is missing.
+    /// Current occurrences of every injected slot, or `nil` if a required one is missing.
     /// Slots provided by this very fork are ignored to avoid self-restart loops.
-    private func resolve() -> [Slot: Int]? {
-        var snapshot: [Slot: Int] = [:]
+    private func resolve() -> [Slot: OccurrenceID?]? {
+        var snapshot: [Slot: OccurrenceID?] = [:]
         for id in inject.required {
             let slot = parent.slot(for: id)
             guard let entry = registry.entry(slot) else { return nil }
 
             if entry.fork == self.id { continue }
-            snapshot[slot] = entry.generation
+            snapshot[slot] = entry.occurrence
         }
         for id in inject.optional {
             let slot = parent.slot(for: id)
             let entry = registry.entry(slot)
             if entry?.fork == self.id { continue }
-            snapshot[slot] = entry?.generation ?? -1
+            snapshot[slot] = .some(entry?.occurrence)
         }
         return snapshot
     }
@@ -136,7 +136,7 @@ public final class Fork {
         forceRestart = false
     }
 
-    private func start(_ snapshot: [Slot: Int]) async {
+    private func start(_ snapshot: [Slot: OccurrenceID?]) async {
         let scope = Scope { [registry, name] error in
             await registry.emit(TeardownFailed(plugin: name, error: error))
         }
