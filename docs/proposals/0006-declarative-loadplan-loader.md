@@ -2,10 +2,10 @@
 id: "0006"
 title: "Declarative LoadPlan loader"
 type: mini
-status: draft
+status: accepted
 authors: ["Amine BENSALAH <amine.bensalah@intech-consulting.fr>"]
 reviewers: []
-decider: ""
+decider: "Amine BENSALAH"
 created: 2026-10-24
 review-deadline: 2026-10-29
 discussion: ""
@@ -76,7 +76,9 @@ Compatibility: new target, additive. Risk: stringly keys violate the typed-key r
 
 ## Decision
 
-<!-- Filled at closing. -->
+**Accepted** on 2026-10-24 by Amine BENSALAH.
+
+Accepted by the decider, overriding the reviewer's "No" (decode ownership and validation unspecified). Conditions resolving the blocking items: new target `CordisLoader` (Foundation only, no third-party dependency); config format is JSON; a `PluginRegistry` maps a resolve key (string) to a registration holding a type-erased decode closure `(Data?) throws -> P.Config` for that plugin, so the plugin type owns its config type and the registry owns decoding. `LoadPlan` entries have a `key`, an optional `name`, and optional JSON `config`. Validation runs before anything loads and collects every error: unknown key, duplicate entry name, config that fails to decode. `load(plan, registry:)` loads in plan order and returns one `LoadOutcome` per entry whose status is read after `ctx.plugin` returns (pending, active or failed are all valid outcomes, since plugins stay pending until their services exist). A failed entry does not stop the others. YAML and hot reload of the plan are out of scope.
 
 ## Amendments
 
