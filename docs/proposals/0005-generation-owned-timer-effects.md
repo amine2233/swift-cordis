@@ -2,7 +2,7 @@
 id: "0005"
 title: "Generation-owned timer effects"
 type: mini
-status: in-review
+status: accepted
 authors: ["Amine BENSALAH <amine.bensalah@intech-consulting.fr>"]
 reviewers: []
 decider: "Amine BENSALAH"
@@ -72,7 +72,9 @@ Compatibility: additive. Risk: a long non-cancellable tick body delays teardown;
 
 ## Decision
 
-<!-- Filled at closing. -->
+**Accepted** on 2026-10-24 by Amine BENSALAH.
+
+Conditions: lives in `Cordis` (not the kernel); generic over `Clock`; tests use an in-repo manual clock; the tick runs on `@CordisActor` and teardown cancels then awaits the task; the tick body is non-throwing in this version, so this proposal does not depend on 0001.
 
 ## Amendments
 

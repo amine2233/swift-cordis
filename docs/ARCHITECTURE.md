@@ -72,6 +72,14 @@ It carries no control capability and no observation stream (deferred, Proposal 0
 `Scope.collect` on an already-disposed scope runs the teardown in a `Task` (the signature is synchronous),
 so that one path is not ordered with respect to other events.
 
+## Timers
+
+`Cordis` (not the kernel) adds `ctx.after(_:clock:_:)` and `ctx.every(_:clock:_:)`, built on `ctx.effect`.
+Each call owns one `Task` running on `@CordisActor`; its teardown cancels the task, then awaits it, so a tick
+that is mid-mutation cannot stall disposal. Timers are therefore cancelled on scope dispose, plugin dispose,
+restart and update. The clock is injectable (`some Clock<Duration>`, default `ContinuousClock`); tests use a manual clock.
+Tick bodies are non-throwing in this version.
+
 ## Tests
 
-`swift test`: `CordisKernelTests` covers scope, graph, lifecycle and cascade invariants; `CordisTests` covers `ServicePlugin`.
+`swift test`: `CordisKernelTests` covers scope, graph, lifecycle and cascade invariants; `CordisTests` covers `ServicePlugin` and timers.
