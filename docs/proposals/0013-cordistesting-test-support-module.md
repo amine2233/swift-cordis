@@ -2,7 +2,7 @@
 id: "0013"
 title: "CordisTesting test-support module"
 type: mini
-status: in-review            # draft | in-review | accepted | rejected | implemented | superseded | abandoned
+status: accepted            # draft | in-review | accepted | rejected | implemented | superseded | abandoned
 authors: ["Amine BENSALAH <amine.bensalah@intech-consulting.fr>"]
 reviewers: []
 decider: "Amine BENSALAH"
@@ -98,7 +98,9 @@ Compatibility: new product only, nothing existing changes. "Experimental" means 
 
 ## Decision
 
-<!-- Filled at closing. -->
+**Accepted** on 2026-10-24 by Amine BENSALAH.
+
+Conditions: implement step 1 (move `ManualClock` and `settle`) and step 2 (`withTestApp`, `RecordedEvents`) in one change; open question 1 is answered by a test before `withTestApp` is relied on; `CordisTesting` depends on `CordisKernel` only and does not link `Testing`; no `@_exported import`.
 
 ## Amendments
 
