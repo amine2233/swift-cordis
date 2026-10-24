@@ -12,7 +12,7 @@ enum WrappedProvider: Plugin {
 enum WrappedConsumer: Plugin {
     static let inject = Inject(required: [WrappedKey.self])
     static func apply(_ ctx: Context, config: Probe) async throws {
-        config.log.append("saw:\(try ctx.require(WrappedKey.self))")
+        try config.log.append("saw:\(ctx.require(WrappedKey.self))")
     }
 }
 

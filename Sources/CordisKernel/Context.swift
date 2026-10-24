@@ -69,7 +69,8 @@ public final class Context {
         guard !scope.isDisposed else { throw CordisError.disposed }
 
         let slot = slot(for: K.id)
-        let wrapped = (layers[K.id] ?? []).reversed().reduce(value as Any) { current, layer in layer(current) }
+        let wrapped = (layers[K.id] ?? []).reversed()
+            .reduce(value as Any) { current, layer in layer(current) }
         try await registry.provide(slot, value: wrapped, by: self)
         let owner = ObjectIdentifier(self)
         let forkID = fork.map(ObjectIdentifier.init)
@@ -92,7 +93,8 @@ public final class Context {
     // MARK: Intercept
 
     /// Returns a child context whose `provide` of `key` runs `layer` over the value first.
-    /// Layers are inherited by derived contexts and plugins; the first-registered layer is the outermost wrapper.
+    /// Layers are inherited by derived contexts and plugins; the first-registered layer is the outermost
+    /// wrapper.
     /// Values already provided are never rewritten.
     public func intercept<K: ServiceKey>(
         _ key: K.Type,
