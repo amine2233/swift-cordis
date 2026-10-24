@@ -2,7 +2,7 @@
 id: "0007"
 title: "Validate before teardown on update"
 type: mini
-status: in-review
+status: accepted
 authors: ["Amine BENSALAH <amine.bensalah@intech-consulting.fr>"]
 reviewers: []
 decider: "Amine BENSALAH"
@@ -77,7 +77,9 @@ Compatibility: additive with a default. `update` gains a discardable return valu
 
 ## Decision
 
-<!-- Filled at closing. -->
+**Accepted** on 2026-10-24 by Amine BENSALAH.
+
+Conditions: `failedAfterApply` is dropped; `update` returns `UpdateOutcome { applied, rejected(any Error) }` (`@discardableResult`); callers read `handle.status` for an `apply` failure after validation. `validate(config:)` is a static, synchronous, `Context`-free requirement with a default no-op, so it checks config shape only. Open question 1 resolved: an outcome enum, not `throws`.
 
 ## Amendments
 

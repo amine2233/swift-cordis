@@ -17,6 +17,8 @@ public protocol Plugin {
     static var inject: Inject { get }
     @CordisActor
     static func apply(_ ctx: Context, config: Config) async throws
+    /// Checks the shape of a config before `update` tears anything down; throw to reject it.
+    static func validate(config: Config) throws
 }
 
 extension Plugin {
@@ -27,6 +29,19 @@ extension Plugin {
     public static var inject: Inject {
         .none
     }
+
+    /// Default validation accepts every config.
+    public static func validate(config: Config) throws {}
+}
+
+/// Result of `PluginHandle.update`: whether the new config was accepted for application.
+public enum UpdateOutcome: Sendable {
+    /// The config passed validation and was applied; read `status` for the apply result.
+    case applied
+    /// Validation threw; the running instance was left untouched.
+    case rejected(any Error)
+    /// The plugin is active and the config equals the last applied one, so nothing was restarted.
+    case unchanged
 }
 
 /// One application of a plugin in a given context (Cordis calls this a "fork").
@@ -181,13 +196,14 @@ public final class Fork {
     func reconfigure(
         config: Any,
         _ body: @escaping @CordisActor (Context) async throws -> Void
-    ) async {
-        if status == .active, let appliedConfig, isEqual(appliedConfig, config) { return }
+    ) async -> Bool {
+        if status == .active, let appliedConfig, isEqual(appliedConfig, config) { return false }
 
         self.config = config
         self.body = body
         forceRestart = true
         await refresh()
+        return true
     }
 
     public func dispose() async {
@@ -208,10 +224,19 @@ public struct PluginHandle<P: Plugin> {
         fork.status
     }
 
-    /// Hot-reconfigure: the plugin is torn down and re-applied with the new config.
-    /// A no-op when the plugin is active and an `Equatable` config equals the last applied one.
-    public func update(_ config: P.Config) async {
-        await fork.reconfigure(config: config) { ctx in try await P.apply(ctx, config: config) }
+    /// Hot-reconfigure: validates the config, then tears the plugin down and re-applies it.
+    /// A no-op (`.unchanged`) when the plugin is active and an `Equatable` config equals the last applied
+    /// one.
+    @discardableResult
+    public func update(_ config: P.Config) async -> UpdateOutcome {
+        do {
+            try P.validate(config: config)
+        } catch {
+            return .rejected(error)
+        }
+        let restarted = await fork
+            .reconfigure(config: config) { ctx in try await P.apply(ctx, config: config) }
+        return restarted ? .applied : .unchanged
     }
 
     /// Hot-unload: every side effect of this plugin (and its sub-plugins) is rolled back.

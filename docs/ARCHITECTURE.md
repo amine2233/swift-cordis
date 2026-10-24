@@ -54,6 +54,7 @@ wrapped value under a second key.
 ## Failure model
 
 `apply` throwing rolls back the fork's scope, sets `.failed`, and emits `PluginFailed`. The rest of the graph keeps running.
+`PluginHandle.update` first runs the static, `Context`-free `Plugin.validate(config:)`; a throw returns `.rejected(error)` and leaves the running instance, its status, services and dependents untouched. Only errors thrown later by `apply` follow the rollback path above.
 Two different contexts providing the same slot raise `CordisError.serviceConflict`; the second plugin fails.
 
 Teardowns (`Disposer`) may throw. `Scope.dispose()` still runs every teardown in reverse order, and each thrown error is

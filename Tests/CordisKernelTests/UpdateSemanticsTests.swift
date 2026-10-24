@@ -102,4 +102,19 @@ struct UpdateSemanticsTests {
         await handle.update(probe)
         #expect(probe.log == ["apply"])
     }
+
+    @Test
+    func updateReportsUnchangedForEqualConfigAndAppliedOtherwise() async {
+        let app = Context.root()
+        let handle = await app.plugin(Equal.self, "a")
+
+        guard case .unchanged = await handle.update("a") else {
+            Issue.record("expected .unchanged")
+            return
+        }
+        guard case .applied = await handle.update("b") else {
+            Issue.record("expected .applied")
+            return
+        }
+    }
 }
