@@ -2,7 +2,7 @@
 id: "0010"
 title: "Performance benchmark baseline"
 type: mini
-status: in-review
+status: accepted
 authors: ["Amine BENSALAH <amine.bensalah@intech-consulting.fr>"]
 reviewers: []
 decider: "Amine BENSALAH"
@@ -73,7 +73,9 @@ Compatibility: additive target. Risk: noisy numbers; mitigated by 'review, not f
 
 ## Decision
 
-<!-- Filled at closing. -->
+**Accepted** on 2026-10-24 by Amine BENSALAH.
+
+Conditions: start with three scenarios (load N plugins, provide affecting N dependents, update); executable target `CordisBench` using only the public `Context` API and `ContinuousClock`; `scripts/bench-compare.sh` diffs against `docs/performance.md` and prints a warning above 15%; a `mise` task `bench`; manual runs only, never in CI.
 
 ## Amendments
 
