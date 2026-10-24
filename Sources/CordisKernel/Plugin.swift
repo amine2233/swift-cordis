@@ -17,6 +17,8 @@ public protocol Plugin {
     static var inject: Inject { get }
     @CordisActor
     static func apply(_ ctx: Context, config: Config) async throws
+    /// Checks the shape of a config before `update` tears anything down; throw to reject it.
+    static func validate(config: Config) throws
 }
 
 extension Plugin {
@@ -27,6 +29,17 @@ extension Plugin {
     public static var inject: Inject {
         .none
     }
+
+    /// Default validation accepts every config.
+    public static func validate(config: Config) throws {}
+}
+
+/// Result of `PluginHandle.update`: whether the new config was accepted for application.
+public enum UpdateOutcome: Sendable {
+    /// The config passed validation and was applied; read `status` for the apply result.
+    case applied
+    /// Validation threw; the running instance was left untouched.
+    case rejected(any Error)
 }
 
 /// One application of a plugin in a given context (Cordis calls this a "fork").
@@ -194,9 +207,16 @@ public struct PluginHandle<P: Plugin> {
         fork.status
     }
 
-    /// Hot-reconfigure: the plugin is torn down and re-applied with the new config.
-    public func update(_ config: P.Config) async {
+    /// Hot-reconfigure: validates the config, then tears the plugin down and re-applies it.
+    @discardableResult
+    public func update(_ config: P.Config) async -> UpdateOutcome {
+        do {
+            try P.validate(config: config)
+        } catch {
+            return .rejected(error)
+        }
         await fork.reconfigure { ctx in try await P.apply(ctx, config: config) }
+        return .applied
     }
 
     /// Hot-unload: every side effect of this plugin (and its sub-plugins) is rolled back.
