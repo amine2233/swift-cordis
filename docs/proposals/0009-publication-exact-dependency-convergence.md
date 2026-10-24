@@ -2,10 +2,10 @@
 id: "0009"
 title: "Publication-exact dependency convergence"
 type: mini
-status: draft
+status: accepted
 authors: ["Amine BENSALAH <amine.bensalah@intech-consulting.fr>"]
 reviewers: []
-decider: ""
+decider: "Amine BENSALAH"
 created: 2026-10-24
 review-deadline: 2026-10-29
 discussion: ""
@@ -73,7 +73,9 @@ Compatibility: observable restart behaviour changes for republished equal values
 
 ## Decision
 
-<!-- Filled at closing. -->
+**Accepted** on 2026-10-24 by Amine BENSALAH.
+
+Accepted by the decider, overriding the reviewer's "No" (the stated cascade is already caused by the provider's withdraw, and `ctx.update` is a separate feature). Conditions: first write a failing test that demonstrates a concrete case where the generation counter over-restarts a dependent; report honestly if no such case exists. Implement `Entry.occurrence` (opaque id allocated per successful `provide`), make `Fork.resolve()` snapshot occurrences instead of generations, and keep the global generation (it is exposed by the snapshot). Add `ctx.update(Key.self) { value in … }` that mutates the value of the occurrence this context published without restarting dependents and without emitting `ServiceChanged`. Values are usually reference-typed protocols, so the closure receives `inout K.Value`.
 
 ## Amendments
 

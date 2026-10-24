@@ -26,6 +26,20 @@ so reactive restarts are deterministic. Heavy work belongs inside the services, 
 5. `Context.provide` registers a withdraw in the plugin's scope, so stopping the plugin withdraws the service,
    which cascades to its dependents.
 
+## Convergence
+
+Each successful `provide` allocates an opaque `Entry.occurrence`; `Fork.resolve` snapshots occurrences, so a fork restarts
+exactly when the provider occurrence it depends on is replaced or disappears. The global generation is kept: the snapshot
+exposes it and it orders slots.
+
+Honest note: this does not change which restarts happen today. Every `provide` bumps the generation and allocates an
+occurrence together, so the two comparisons are equivalent, and no scenario was found where a dependent restarts although
+the occurrence it depends on is unchanged (republishing is by definition a new occurrence). The behavioural gain is
+`ctx.update(Key.self) { (value: inout K.Value) in … }`, which mutates the value this context published without changing
+occurrence or generation: dependents are not restarted and no `ServiceChanged` is emitted. It throws
+`CordisError.notPublished` if this context did not publish the slot. Dependents holding the old value only see the change
+if the value is a reference type or they re-read the slot.
+
 ## Space
 
 A `Slot` is `(service, realm)`. `ctx.isolate(Key.self, label:)` returns a child context resolving that key in another realm.

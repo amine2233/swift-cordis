@@ -67,12 +67,14 @@ public enum CordisError: Error, CustomStringConvertible {
     case missingService(ServiceID)
     case serviceConflict(Slot, existingOwner: String)
     case disposed
+    case notPublished(Slot)
 
     public var description: String {
         switch self {
         case let .missingService(id): "Service \(id) is not available in this context"
         case let .serviceConflict(slot, owner): "Service \(slot) is already provided by \(owner)"
         case .disposed: "Context has been disposed"
+        case let .notPublished(slot): "Service \(slot) is not published by this context"
         }
     }
 }
