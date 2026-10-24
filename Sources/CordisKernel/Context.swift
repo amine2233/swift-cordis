@@ -35,7 +35,11 @@ public final class Context {
 
     /// Creates the root of a new plugin graph (your "App").
     public static func root() -> Context {
-        Context(registry: Registry(), parent: nil, fork: nil, scope: Scope())
+        let registry = Registry()
+        let scope = Scope { error in
+            await registry.emit(TeardownFailed(plugin: "root", error: error))
+        }
+        return Context(registry: registry, parent: nil, fork: nil, scope: scope)
     }
 
     /// Tears down the whole graph, children first.

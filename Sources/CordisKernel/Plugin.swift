@@ -137,7 +137,10 @@ public final class Fork {
     }
 
     private func start(_ snapshot: [Slot: Int]) async {
-        let ctx = Context(registry: registry, parent: parent, fork: self, scope: Scope())
+        let scope = Scope { [registry, name] error in
+            await registry.emit(TeardownFailed(plugin: name, error: error))
+        }
+        let ctx = Context(registry: registry, parent: parent, fork: self, scope: scope)
         runtime = Runtime(context: ctx, snapshot: snapshot)
         await setStatus(.loading)
         do {
