@@ -94,3 +94,20 @@ if [[ "${usage_serve:-}" == "true" ]]; then
     python3 -m http.server -d public
 fi
 '''
+
+[tasks.lint]
+description = "Run all static checks (code + documentation) — used by CI's lint job"
+run = '''
+#!/usr/bin/env bash
+set -euo pipefail
+# ponytail: executor format has no --lint flag, so format then diff the diff
+before=$(git diff)
+executor format .
+if [[ "$before" != "$(git diff)" ]]; then
+    git diff
+    echo "❌ formatting changed files — commit the result of 'mise format'" >&2
+    exit 1
+fi
+executor linting code ./Sources --reporter console
+executor linting documentation ./Sources --reporter console
+'''
