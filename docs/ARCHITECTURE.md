@@ -68,6 +68,7 @@ wrapped value under a second key.
 ## Failure model
 
 `apply` throwing rolls back the fork's scope, sets `.failed`, and emits `PluginFailed`. The rest of the graph keeps running.
+`PluginHandle.update` first runs the static, `Context`-free `Plugin.validate(config:)`; a throw returns `.rejected(error)` and leaves the running instance, its status, services and dependents untouched. Only errors thrown later by `apply` follow the rollback path above.
 Two different contexts providing the same slot raise `CordisError.serviceConflict`; the second plugin fails.
 
 Teardowns (`Disposer`) may throw. `Scope.dispose()` still runs every teardown in reverse order, and each thrown error is
@@ -94,6 +95,25 @@ that is mid-mutation cannot stall disposal. Timers are therefore cancelled on sc
 restart and update. The clock is injectable (`some Clock<Duration>`, default `ContinuousClock`); tests use a manual clock.
 Tick bodies are non-throwing in this version.
 
+## Update semantics
+
+`PluginHandle.update` is a no-op when the fork is `.active` and the new config equals the last successfully applied one
+(runtime `Equatable` check; non-`Equatable` configs always restart). The applied config is recorded only when the fork
+reaches `.active`, so retrying the same config after a failed apply re-runs `apply`.
+There is deliberately no `replace` / era-swap equivalent: cordis-rs fixes dependency edges for an era and needs a swap to
+retarget them, whereas `Fork.resolve()` re-reads the edges on every reconcile, so a plain restart already retargets.
+Dispose and load again for a fresh identity.
+
+## Loader
+
+`CordisLoader` (separate target, Foundation only) loads plugins from declarative JSON-configured entries. A `PluginRegistry`
+maps a string resolve key to a plugin type plus a type-erased decode closure, so the plugin owns its `Config` type and the
+registry owns decoding. A `LoadPlan` is an ordered list of entries (`key`, optional `name`, optional JSON `config`).
+`plan.validate(against:)` collects every error (`LoaderError`: unknown key, duplicate name, config that fails to decode).
+`ctx.load(plan, registry:)` validates first; an invalid plan loads nothing and every entry is reported failed. Otherwise entries
+load in plan order and each `LoadOutcome` carries the status read once `ctx.plugin` returns (`pending`, `active` or `failed`:
+plugins stay pending until their services exist). A failed entry does not stop the others. Strings never enter `CordisKernel`.
+
 ## Tests
 
-`swift test`: `CordisKernelTests` covers scope, graph, lifecycle and cascade invariants; `CordisTests` covers `ServicePlugin` and timers.
+`swift test`: `CordisKernelTests` covers scope, graph, lifecycle and cascade invariants; `CordisTests` covers `ServicePlugin` and timers; `CordisLoaderTests` covers the loader.

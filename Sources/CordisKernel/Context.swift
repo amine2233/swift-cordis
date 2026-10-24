@@ -158,7 +158,7 @@ public final class Context {
     /// unloading the parent unloads the whole subtree.
     @discardableResult
     public func plugin<P: Plugin>(_ plugin: P.Type, _ config: P.Config) async -> PluginHandle<P> {
-        let fork = Fork(name: P.name, inject: P.inject, parent: self) { ctx in
+        let fork = Fork(name: P.name, inject: P.inject, parent: self, config: config) { ctx in
             try await P.apply(ctx, config: config)
         }
         registry.register(fork)

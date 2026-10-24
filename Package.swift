@@ -7,13 +7,18 @@ let package = Package(
     products: [
         .library(name: "Cordis", targets: ["Cordis"]),
         .library(name: "CordisKernel", targets: ["CordisKernel"]),
-        .executable(name: "cordis-demo", targets: ["CordisDemo"])
+        .library(name: "CordisLoader", targets: ["CordisLoader"]),
+        .executable(name: "cordis-demo", targets: ["CordisDemo"]),
+        .executable(name: "cordis-bench", targets: ["CordisBench"])
     ],
     targets: [
         .target(name: "CordisKernel"),
         .target(name: "Cordis", dependencies: ["CordisKernel"]),
+        .target(name: "CordisLoader", dependencies: ["Cordis"]),
         .executableTarget(name: "CordisDemo", dependencies: ["Cordis"]),
+        .executableTarget(name: "CordisBench", dependencies: ["Cordis"]),
         .testTarget(name: "CordisKernelTests", dependencies: ["CordisKernel"]),
-        .testTarget(name: "CordisTests", dependencies: ["Cordis"])
+        .testTarget(name: "CordisTests", dependencies: ["Cordis"]),
+        .testTarget(name: "CordisLoaderTests", dependencies: ["CordisLoader"])
     ]
 )
