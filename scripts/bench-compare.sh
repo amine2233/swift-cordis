@@ -6,7 +6,9 @@ cd "$(dirname "$0")/.."
 threshold_percent=15
 baseline_file="docs/performance.md"
 
-current="$(/usr/bin/xcrun swift run -c release cordis-bench 2>/dev/null)"
+swift_bin="swift"
+if [ -x /usr/bin/xcrun ]; then swift_bin="/usr/bin/xcrun swift"; fi
+current="$($swift_bin run -c release cordis-bench 2>/dev/null)"
 echo "$current"
 
 warnings=0
