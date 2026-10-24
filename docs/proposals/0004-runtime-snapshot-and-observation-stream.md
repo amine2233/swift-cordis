@@ -2,7 +2,7 @@
 id: "0004"
 title: "Runtime snapshot and observation stream"
 type: mini
-status: in-review
+status: accepted
 authors: ["Amine BENSALAH <amine.bensalah@intech-consulting.fr>"]
 reviewers: []
 decider: "Amine BENSALAH"
@@ -73,7 +73,9 @@ Compatibility: additive. Risk: record shape becomes public contract; mark provis
 
 ## Decision
 
-<!-- Filled at closing. -->
+**Accepted** on 2026-10-24 by Amine BENSALAH.
+
+Conditions: v1 ships `snapshot()` only (the `observations()` stream stays deferred until a named consumer exists); record shapes are provisional and documented as such; `PluginID` is opaque.
 
 ## Amendments
 

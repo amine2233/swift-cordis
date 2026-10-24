@@ -60,6 +60,13 @@ Teardowns (`Disposer`) may throw. `Scope.dispose()` still runs every teardown in
 emitted once as `TeardownFailed(plugin:error:)` (`plugin` is the owning context name, `root` for the graph root).
 `Disposable()` itself never throws.
 
+## Snapshot
+
+`ctx.snapshot()` (synchronous, on `@CordisActor`) returns an immutable `RuntimeSnapshot` copy of the graph:
+`plugins: [PluginInfo]` (opaque `PluginID`, name, status, parent) and `slots: [SlotInfo]` (service, realm, providing `PluginID?`, generation).
+Plugins are listed in registration order, slots in provision order. Disposed plugins are unregistered, so they are not listed.
+It carries no control capability and no observation stream (deferred, Proposal 0004). The record shapes are provisional.
+
 ## Known limitation
 
 `Scope.collect` on an already-disposed scope runs the teardown in a `Task` (the signature is synchronous),

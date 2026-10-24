@@ -160,6 +160,13 @@ public final class Context {
         await self.plugin(plugin, ())
     }
 
+    // MARK: Introspection
+
+    /// Read-only view of the plugins and service slots of this graph (provisional shape).
+    public func snapshot() -> RuntimeSnapshot {
+        registry.snapshot()
+    }
+
     // MARK: Effects & events
 
     /// Registers a teardown for this context.

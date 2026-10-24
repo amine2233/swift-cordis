@@ -18,6 +18,8 @@ final class Registry {
 
     private var slots: [Slot: Entry] = [:]
     private var forks: [ObjectIdentifier: Fork] = [:]
+    private var forkOrder: [ObjectIdentifier: Int] = [:]
+    private var forkCounter = 0
     private(set) var listeners: [ObjectIdentifier: [Listener]] = [:]
     private var generation = 0
     private var listenerCounter = 0
@@ -72,10 +74,37 @@ final class Registry {
 
     func register(_ fork: Fork) {
         forks[fork.id] = fork
+        forkCounter += 1
+        forkOrder[fork.id] = forkCounter
     }
 
     func unregister(_ fork: Fork) {
         forks[fork.id] = nil
+        forkOrder[fork.id] = nil
+    }
+
+    func snapshot() -> RuntimeSnapshot {
+        let plugins = forks.values
+            .sorted { (forkOrder[$0.id] ?? 0) < (forkOrder[$1.id] ?? 0) }
+            .map { fork in
+                PluginInfo(
+                    id: PluginID(fork.id),
+                    name: fork.name,
+                    status: fork.status,
+                    parent: fork.parent.fork.map { PluginID($0.id) }
+                )
+            }
+        let slotInfos = slots
+            .sorted { $0.value.generation < $1.value.generation }
+            .map { slot, entry in
+                SlotInfo(
+                    service: slot.service.description,
+                    realm: slot.realm,
+                    provider: entry.fork.map(PluginID.init),
+                    generation: entry.generation
+                )
+            }
+        return RuntimeSnapshot(plugins: plugins, slots: slotInfos)
     }
 
     // MARK: Events
