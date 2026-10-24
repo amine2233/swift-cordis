@@ -1,0 +1,24 @@
+name: CI
+
+# Thin caller of the shared reusable workflow:
+#   amine2233/ci-shared/.github/workflows/ci.yml
+#
+# The test/lint logic lives in mise.toml; the shared workflow only provisions
+# runners and runs the mise tasks.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  ci:
+    uses: amine2233/ci-shared/.github/workflows/ci.yml@1.0
+    with:
+      # Tests run via `swift test` (mise's Swift toolchain), on macOS + Linux.
+      enable-macos: true
+      enable-linux: true
+      # No dedicated `lint` task in mise.toml. To enable linting, set:
+      #   enable-lint: true
+      #   lint-task: "check_code ::: check_documentation"
+      enable-lint: true

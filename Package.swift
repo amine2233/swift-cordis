@@ -3,14 +3,17 @@ import PackageDescription
 
 let package = Package(
     name: "swift-cordis",
-    platforms: [.macOS(.v14), .iOS(.v17)],
+    platforms: [.macOS(.v14), .iOS(.v17), .tvOS(.v17), .watchOS(.v10)],
     products: [
-        .library(name: "Cordis", targets: ["Cordis"]),  // usage normal
-        .library(name: "CordisKernel", targets: ["CordisKernel"]),  // noyau seul
+        .library(name: "Cordis", targets: ["Cordis"]),
+        .library(name: "CordisKernel", targets: ["CordisKernel"]),
+        .executable(name: "cordis-demo", targets: ["CordisDemo"])
     ],
     targets: [
-        .target(name: "CordisKernel"),  // Scope, Fork, Registry, Context
-        .target(name: "Cordis", dependencies: ["CordisKernel"]),  // ServicePlugin, mixins, helpers
+        .target(name: "CordisKernel"),
+        .target(name: "Cordis", dependencies: ["CordisKernel"]),
+        .executableTarget(name: "CordisDemo", dependencies: ["Cordis"]),
         .testTarget(name: "CordisKernelTests", dependencies: ["CordisKernel"]),
+        .testTarget(name: "CordisTests", dependencies: ["Cordis"])
     ]
 )

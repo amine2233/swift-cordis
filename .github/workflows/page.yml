@@ -1,0 +1,27 @@
+name: Deploy DocC to GitHub Pages
+
+# Thin caller of the shared reusable workflow:
+#   amine2233/ci-shared/.github/workflows/pages.yml
+#
+# One-time setup: Settings → Pages → Source = "GitHub Actions".
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  docs:
+    # Deploy on manual dispatch, or only when the triggering CI run succeeded.
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_sha == github.sha) }}
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    uses: amine2233/ci-shared/.github/workflows/pages.yml@1.0
+    with:
+      main-library-name: swift-cordis-Package
+      hosting-base-path: ${{ github.event.repository.name }}
+      macos-runner: macos-latest
