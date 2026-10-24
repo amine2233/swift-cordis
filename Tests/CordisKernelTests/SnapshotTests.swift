@@ -23,7 +23,9 @@ enum SnapshotWaiting: Plugin {
 
 enum SnapshotFailing: Plugin {
     struct Boom: Error {}
-    static func apply(_ ctx: Context, config: Void) async throws { throw Boom() }
+    static func apply(_ ctx: Context, config: Void) async throws {
+        throw Boom()
+    }
 }
 
 enum SnapshotParent: Plugin {
@@ -47,10 +49,17 @@ struct SnapshotTests {
         let app = Context.root()
         await app.plugin(SnapshotWaiting.self)
         await app.plugin(SnapshotFailing.self)
-        #expect(app.snapshot().plugins.map(\.status) == [.pending, .failed(String(describing: SnapshotFailing.Boom()))])
+        #expect(app.snapshot().plugins.map(\.status) == [
+            .pending,
+            .failed(String(describing: SnapshotFailing.Boom()))
+        ])
 
         await app.plugin(SnapshotProvider.self)
-        #expect(app.snapshot().plugins.map(\.status) == [.active, .failed(String(describing: SnapshotFailing.Boom())), .active])
+        #expect(app.snapshot().plugins.map(\.status) == [
+            .active,
+            .failed(String(describing: SnapshotFailing.Boom())),
+            .active
+        ])
     }
 
     @Test
@@ -114,12 +123,13 @@ struct SnapshotTests {
     @Test
     func orderingIsRegistrationOrderForPluginsAndProvisionOrderForSlots() async {
         let app = Context.root()
-        for _ in 0..<5 {
+        for _ in 0 ..< 5 {
             await app.plugin(SnapshotSecondProvider.self)
             await app.plugin(SnapshotWaiting.self)
         }
         let names = app.snapshot().plugins.map(\.name)
-        #expect(names == Array(repeating: [SnapshotSecondProvider.name, SnapshotWaiting.name], count: 5).flatMap { $0 })
+        #expect(names == Array(repeating: [SnapshotSecondProvider.name, SnapshotWaiting.name], count: 5)
+            .flatMap { $0 })
 
         await app.plugin(SnapshotProvider.self)
         let snapshot = app.snapshot()

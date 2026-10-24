@@ -107,6 +107,7 @@ public final class Context {
 
     // MARK: Introspection
 
+    /// Read-only view of the plugins and service slots of this graph (provisional shape).
     public func snapshot() -> RuntimeSnapshot {
         registry.snapshot()
     }
