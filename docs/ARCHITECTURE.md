@@ -31,6 +31,15 @@ so reactive restarts are deterministic. Heavy work belongs inside the services, 
 A `Slot` is `(service, realm)`. `ctx.isolate(Key.self, label:)` returns a child context resolving that key in another realm.
 Same label = shared realm, no label = private anonymous realm.
 
+## Zones
+
+An optional event-routing axis, independent of `Scope`, realms and plugin lifetime. `ctx.zone("a")` returns a child context
+whose zone is a child of the current one (same label under the same parent = same zone); derived contexts
+(`isolate`, `zone`, plugins) inherit it. A listener is reached when it has no zone (global) or its zone is
+ancestor-or-self of the emit zone; an emit from no zone reaches only global listeners. The default is no zone.
+
+Zones are a routing convenience, **not an authorization boundary**: any code holding a context can create or emit into any zone.
+
 ## Failure model
 
 `apply` throwing rolls back the fork's scope, sets `.failed`, and emits `PluginFailed`. The rest of the graph keeps running.
