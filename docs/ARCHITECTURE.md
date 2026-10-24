@@ -36,6 +36,13 @@ Same label = shared realm, no label = private anonymous realm.
 `apply` throwing rolls back the fork's scope, sets `.failed`, and emits `PluginFailed`. The rest of the graph keeps running.
 Two different contexts providing the same slot raise `CordisError.serviceConflict`; the second plugin fails.
 
+## Snapshot
+
+`ctx.snapshot()` (synchronous, on `@CordisActor`) returns an immutable `RuntimeSnapshot` copy of the graph:
+`plugins: [PluginInfo]` (opaque `PluginID`, name, status, parent) and `slots: [SlotInfo]` (service, realm, providing `PluginID?`, generation).
+Plugins are listed in registration order, slots in provision order. Disposed plugins are unregistered, so they are not listed.
+It carries no control capability and no observation stream (deferred, Proposal 0004). The record shapes are provisional.
+
 ## Known limitation
 
 `Scope.collect` on an already-disposed scope runs the teardown in a `Task` (the signature is synchronous),

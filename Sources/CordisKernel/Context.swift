@@ -105,6 +105,12 @@ public final class Context {
         await self.plugin(plugin, ())
     }
 
+    // MARK: Introspection
+
+    public func snapshot() -> RuntimeSnapshot {
+        registry.snapshot()
+    }
+
     // MARK: Effects & events
 
     /// Registers a teardown for this context.
