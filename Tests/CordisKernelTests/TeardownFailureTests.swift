@@ -35,7 +35,10 @@ struct TeardownFailureTests {
     func rootScopeEmitsTeardownFailedWithRootName() async {
         let app = Context.root()
         let probe = Probe()
-        app.on(TeardownFailed.self) { probe.log.append("\($0.plugin):\(($0.error as? TeardownBoom)?.id ?? -1)") }
+        app
+            .on(TeardownFailed.self) {
+                probe.log.append("\($0.plugin):\(($0.error as? TeardownBoom)?.id ?? -1)")
+            }
         app.onDispose { throw TeardownBoom(id: 7) }
         await app.dispose()
         #expect(probe.log == ["root:7"])
