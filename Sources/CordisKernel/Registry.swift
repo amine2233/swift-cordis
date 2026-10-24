@@ -80,7 +80,11 @@ final class Registry {
 
     // MARK: Events
 
-    func on<E: Event>(_ type: E.Type, zone: ZoneID?, _ handler: @escaping @CordisActor (E) async -> Void) -> Int {
+    func on<E: Event>(
+        _ type: E.Type,
+        zone: ZoneID?,
+        _ handler: @escaping @CordisActor (E) async -> Void
+    ) -> Int {
         listenerCounter += 1
         let listener = Listener(id: listenerCounter, zone: zone) { any in
             if let event = any as? E { await handler(event) }

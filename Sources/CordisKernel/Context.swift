@@ -85,14 +85,22 @@ public final class Context {
     public func isolate<K: ServiceKey>(_ key: K.Type, label: String? = nil) -> Context {
         var realms = realms
         realms[K.id] = label ?? registry.anonymousRealm()
-        return Context(registry: registry, parent: self, fork: fork, scope: scope, realms: realms, zoneID: zoneID)
+        return Context(
+            registry: registry,
+            parent: self,
+            fork: fork,
+            scope: scope,
+            realms: realms,
+            zoneID: zoneID
+        )
     }
 
     // MARK: Event routing — zones
 
     /// Returns a child context in the zone `label` under this context's zone.
     /// Listeners registered through it only hear events emitted from the same zone or a descendant;
-    /// listeners with no zone hear everything. Independent of scope and realms; not an authorization boundary.
+    /// listeners with no zone hear everything. Independent of scope and realms; not an authorization
+    /// boundary.
     public func zone(_ label: String) -> Context {
         Context(
             registry: registry,

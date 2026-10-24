@@ -11,7 +11,8 @@ enum ZoneListener: Plugin {
 }
 
 @CordisActor
-@Suite struct ZoneTests {
+@Suite
+struct ZoneTests {
     let root = Context.root()
     let probe = Probe()
 
@@ -19,7 +20,8 @@ enum ZoneListener: Plugin {
         ctx.on(Order.self) { [probe] _ in probe.log.append(name) }
     }
 
-    @Test func tenantsAreIsolated() async {
+    @Test
+    func tenantsAreIsolated() async {
         let a = root.zone("a")
         let b = root.zone("b")
         listen(a, "a")
@@ -28,7 +30,8 @@ enum ZoneListener: Plugin {
         #expect(probe.log == ["a"])
     }
 
-    @Test func ancestorReceivesDescendantEvents() async {
+    @Test
+    func ancestorReceivesDescendantEvents() async {
         let a = root.zone("a")
         let child = a.zone("x")
         listen(a, "a")
@@ -38,33 +41,38 @@ enum ZoneListener: Plugin {
         #expect(probe.log == ["a", "x", "a"])
     }
 
-    @Test func sameLabelUnderSameParentIsSameZone() async {
+    @Test
+    func sameLabelUnderSameParentIsSameZone() async {
         listen(root.zone("a"), "first")
         await root.zone("a").emit(Order())
         #expect(probe.log == ["first"])
     }
 
-    @Test func sameLabelUnderDifferentParentsDiffers() async {
+    @Test
+    func sameLabelUnderDifferentParentsDiffers() async {
         listen(root.zone("a").zone("x"), "ax")
         await root.zone("b").zone("x").emit(Order())
         #expect(probe.log.isEmpty)
     }
 
-    @Test func globalListenerSeesEverything() async {
+    @Test
+    func globalListenerSeesEverything() async {
         listen(root, "global")
         await root.zone("a").emit(Order())
         await root.emit(Order())
         #expect(probe.log == ["global", "global"])
     }
 
-    @Test func globalEmitReachesOnlyGlobalListeners() async {
+    @Test
+    func globalEmitReachesOnlyGlobalListeners() async {
         listen(root, "global")
         listen(root.zone("a"), "a")
         await root.emit(Order())
         #expect(probe.log == ["global"])
     }
 
-    @Test func zoneIsInheritedThroughIsolate() async {
+    @Test
+    func zoneIsInheritedThroughIsolate() async {
         let a = root.zone("a")
         let isolated = a.isolate(ValueKey.self, label: "t")
         listen(isolated, "iso")
@@ -73,7 +81,8 @@ enum ZoneListener: Plugin {
         #expect(probe.log == ["iso"])
     }
 
-    @Test func zoneIsInheritedByPlugins() async {
+    @Test
+    func zoneIsInheritedByPlugins() async {
         let a = root.zone("a")
         await a.plugin(ZoneListener.self, (probe, "plugin"))
         await a.emit(Order())
@@ -81,7 +90,8 @@ enum ZoneListener: Plugin {
         #expect(probe.log == ["plugin"])
     }
 
-    @Test func disposeRemovesZonedListener() async {
+    @Test
+    func disposeRemovesZonedListener() async {
         let a = root.zone("a")
         listen(a, "a")
         await a.scope.dispose()
@@ -90,7 +100,8 @@ enum ZoneListener: Plugin {
         #expect(root.registry.listenerCount(for: Order.self) == 0)
     }
 
-    @Test func emitUsesSnapshotWithZones() async {
+    @Test
+    func emitUsesSnapshotWithZones() async {
         let a = root.zone("a")
         a.on(Order.self) { [probe, a] _ in
             probe.log.append("first")
