@@ -14,6 +14,7 @@ public final class Context {
     public let parent: Context?
     let fork: Fork?
     private var realms: [ServiceID: String]
+    private var layers: [ServiceID: [@CordisActor (Any) -> Any]]
     let zoneID: ZoneID?
 
     public var name: String {
@@ -26,6 +27,7 @@ public final class Context {
         fork: Fork?,
         scope: Scope,
         realms: [ServiceID: String]? = nil,
+        layers: [ServiceID: [@CordisActor (Any) -> Any]]? = nil,
         zoneID: ZoneID? = nil
     ) {
         self.registry = registry
@@ -33,6 +35,7 @@ public final class Context {
         self.fork = fork
         self.scope = scope
         self.realms = realms ?? parent?.realms ?? [:]
+        self.layers = layers ?? parent?.layers ?? [:]
         self.zoneID = zoneID ?? parent?.zoneID
     }
 
@@ -73,7 +76,9 @@ public final class Context {
         guard !scope.isDisposed else { throw CordisError.disposed }
 
         let slot = slot(for: K.id)
-        try await registry.provide(slot, value: value, by: self)
+        let wrapped = (layers[K.id] ?? []).reversed()
+            .reduce(value as Any) { current, layer in layer(current) }
+        try await registry.provide(slot, value: wrapped, by: self)
         let owner = ObjectIdentifier(self)
         let forkID = fork.map(ObjectIdentifier.init)
         scope.collect { [registry] in
@@ -114,6 +119,25 @@ public final class Context {
             realms: realms,
             zoneID: registry.zone(label, under: zoneID)
         )
+    }
+
+    // MARK: Intercept
+
+    /// Returns a child context whose `provide` of `key` runs `layer` over the value first.
+    /// Layers are inherited by derived contexts and plugins; the first-registered layer is the outermost
+    /// wrapper.
+    /// Values already provided are never rewritten.
+    public func intercept<K: ServiceKey>(
+        _ key: K.Type,
+        _ layer: @escaping @CordisActor (K.Value) -> K.Value
+    ) -> Context {
+        var layers = layers
+        layers[K.id, default: []].append { current in
+            guard let typed = current as? K.Value else { return current }
+
+            return layer(typed)
+        }
+        return Context(registry: registry, parent: self, fork: fork, scope: scope, layers: layers)
     }
 
     // MARK: Composition

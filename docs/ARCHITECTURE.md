@@ -40,6 +40,17 @@ ancestor-or-self of the emit zone; an emit from no zone reaches only global list
 
 Zones are a routing convenience, **not an authorization boundary**: any code holding a context can create or emit into any zone.
 
+## Intercept
+
+`ctx.intercept(Key.self) { value in ... }` returns a child context holding an ordered list of layers for that service.
+Layers are inherited by `isolate` and by plugins loaded through the context. `provide` applies them at provide time,
+last-registered first, so the first-registered layer is the outermost wrapper; the registry stores the wrapped value
+with a single generation bump. Layers are never retroactive: values already provided are untouched, and adding a layer
+restarts nothing. The closure is non-throwing; conflict behaviour is unchanged.
+
+Alternative with no kernel support: a decorator plugin that injects the base service under one key and provides the
+wrapped value under a second key.
+
 ## Failure model
 
 `apply` throwing rolls back the fork's scope, sets `.failed`, and emits `PluginFailed`. The rest of the graph keeps running.

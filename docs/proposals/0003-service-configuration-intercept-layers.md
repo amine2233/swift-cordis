@@ -2,10 +2,10 @@
 id: "0003"
 title: "Service configuration intercept layers"
 type: mini
-status: draft
+status: accepted
 authors: ["Amine BENSALAH <amine.bensalah@intech-consulting.fr>"]
 reviewers: []
-decider: ""
+decider: "Amine BENSALAH"
 created: 2026-10-24
 review-deadline: 2026-10-29
 discussion: ""
@@ -73,7 +73,9 @@ Compatibility: additive. Risk: a layer that throws leaves the provider failed (r
 
 ## Decision
 
-<!-- Filled at closing. -->
+**Accepted** on 2026-10-24 by Amine BENSALAH.
+
+Accepted by the decider, overriding the reviewer's "No" (speculative, underspecified). Conditions resolving the blocking items: no static hook on `ServiceKey`; `ctx.intercept(Key.self) { value in … }` returns a child context with the layer appended; layers are inherited by derived contexts (`isolate`, plugins loaded through them); a layer wraps only values provided through that context or its descendants, at provide time, and is never applied retroactively; the first-registered (outermost) layer wraps last; the closure is non-throwing in this version. Open question 1 resolved: no retroactive application. The decorator-plugin alternative remains valid and is documented.
 
 ## Amendments
 
