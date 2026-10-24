@@ -23,6 +23,10 @@ executor test report --report-for-type swift ./
 executor coverage swift --verbose
 '''
 
+[tasks.bench]
+description = "Run CordisBench and compare against docs/performance.md (review only, never fails)."
+run = "scripts/bench-compare.sh"
+
 [tasks.release]
 description = "Run semantic-release. Use --dry-run to preview without publishing."
 usage = '''
