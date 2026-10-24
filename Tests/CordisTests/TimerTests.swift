@@ -1,4 +1,5 @@
 import Cordis
+import CordisTesting
 import Testing
 
 @CordisActor
@@ -14,13 +15,6 @@ enum TickerPlugin: Plugin {
 }
 
 enum TickKey: ServiceKey { typealias Value = Int }
-
-@CordisActor
-func settle(until condition: () -> Bool) async {
-    for _ in 0 ..< 10_000 where !condition() {
-        await Task.yield()
-    }
-}
 
 @CordisActor
 func waitForSleepers(_ clock: ManualClock, _ count: Int) async {

@@ -114,6 +114,15 @@ registry owns decoding. A `LoadPlan` is an ordered list of entries (`key`, optio
 load in plan order and each `LoadOutcome` carries the status read once `ctx.plugin` returns (`pending`, `active` or `failed`:
 plugins stay pending until their services exist). A failed entry does not stop the others. Strings never enter `CordisKernel`.
 
+## Testing
+
+`CordisTesting` (depends on `CordisKernel` only, never links `Testing` or `XCTest`) is for test targets, never production
+code. It provides `ManualClock` (deterministic `Clock`), `settle(until:)` (bounded yields, returns whether the condition held)
+and `withTestApp { ctx, events in … }`, which runs the body on a fresh root context, always disposes it (even if the body
+throws) and returns `RecordedEvents` (`PluginFailed`, `PluginStatusChanged`, `ServiceChanged`, `TeardownFailed` in emission
+order). The recorder is registered first, so listener teardown (reverse order) removes it last and it still sees
+`TeardownFailed` raised during dispose, including by teardowns the body registered. The API is 0.x and experimental.
+
 ## Tests
 
-`swift test`: `CordisKernelTests` covers scope, graph, lifecycle and cascade invariants; `CordisTests` covers `ServicePlugin` and timers; `CordisLoaderTests` covers the loader.
+`swift test`: `CordisKernelTests` covers scope, graph, lifecycle and cascade invariants; `CordisTests` covers `ServicePlugin` and timers; `CordisLoaderTests` covers the loader; `CordisTestingTests` covers the test-support module.

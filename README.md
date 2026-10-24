@@ -15,6 +15,7 @@ Cordis' idea: **everything is a plugin**, and plugins compose along two axes.
 
 - `CordisKernel`: `Scope`, `Fork`, `Registry`, `Context`, `ServiceKey`, `Inject`, events. No sugar.
 - `Cordis`: re-exports the kernel and adds `ServicePlugin`.
+- `CordisTesting`: `ManualClock`, `settle(until:)` and `withTestApp` for tests. Add it to test targets only, never to production targets. The API is 0.x and experimental.
 
 ## Quickstart
 

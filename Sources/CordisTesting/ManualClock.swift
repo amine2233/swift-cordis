@@ -1,18 +1,26 @@
+import CordisKernel
 import Foundation
 
-final class ManualClock: Clock, @unchecked Sendable {
-    struct Instant: InstantProtocol {
-        var offset: Duration
+/// A deterministic clock that only moves when `advance(by:)` is called.
+public final class ManualClock: Clock, @unchecked Sendable {
+    /// A point in time measured as an offset from the clock's start.
+    public struct Instant: InstantProtocol {
+        public var offset: Duration
 
-        func advanced(by duration: Duration) -> Instant {
+        /// Creates an instant at `offset` from the clock's start.
+        public init(offset: Duration) {
+            self.offset = offset
+        }
+
+        public func advanced(by duration: Duration) -> Instant {
             Instant(offset: offset + duration)
         }
 
-        func duration(to other: Instant) -> Duration {
+        public func duration(to other: Instant) -> Duration {
             other.offset - offset
         }
 
-        static func < (lhs: Instant, rhs: Instant) -> Bool {
+        public static func < (lhs: Instant, rhs: Instant) -> Bool {
             lhs.offset < rhs.offset
         }
     }
@@ -32,17 +40,21 @@ final class ManualClock: Clock, @unchecked Sendable {
     private var current = Instant(offset: .zero)
     private var sleepers: [UUID: Sleeper] = [:]
 
-    var now: Instant {
+    /// Creates a clock at its start instant with no sleepers.
+    public init() {}
+
+    public var now: Instant {
         lock.lock()
         defer { lock.unlock() }
         return current
     }
 
-    var minimumResolution: Duration {
+    public var minimumResolution: Duration {
         .zero
     }
 
-    var sleeperCount: Int {
+    /// Number of tasks currently suspended in `sleep`.
+    public var sleeperCount: Int {
         lock.lock()
         defer { lock.unlock() }
         return sleepers.count
@@ -68,7 +80,7 @@ final class ManualClock: Clock, @unchecked Sendable {
         return sleepers.removeValue(forKey: id)
     }
 
-    func sleep(until deadline: Instant, tolerance: Duration?) async throws {
+    public func sleep(until deadline: Instant, tolerance: Duration?) async throws {
         let id = UUID()
         try await withTaskCancellationHandler {
             try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<
@@ -86,7 +98,8 @@ final class ManualClock: Clock, @unchecked Sendable {
         }
     }
 
-    func advance(by duration: Duration) {
+    /// Moves the clock forward and resumes every sleeper whose deadline has passed.
+    public func advance(by duration: Duration) {
         lock.lock()
         current = current.advanced(by: duration)
         let ready = sleepers.filter { $0.value.deadline <= current }
