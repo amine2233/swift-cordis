@@ -38,7 +38,9 @@ final class ManualClock: Clock, @unchecked Sendable {
         return current
     }
 
-    var minimumResolution: Duration { .zero }
+    var minimumResolution: Duration {
+        .zero
+    }
 
     var sleeperCount: Int {
         lock.lock()
@@ -69,7 +71,10 @@ final class ManualClock: Clock, @unchecked Sendable {
     func sleep(until deadline: Instant, tolerance: Duration?) async throws {
         let id = UUID()
         try await withTaskCancellationHandler {
-            try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, any Error>) in
+            try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<
+                Void,
+                any Error
+            >) in
                 switch register(id, deadline: deadline, continuation: continuation) {
                 case .registered: break
                 case .cancelled: continuation.resume(throwing: CancellationError())
@@ -85,7 +90,9 @@ final class ManualClock: Clock, @unchecked Sendable {
         lock.lock()
         current = current.advanced(by: duration)
         let ready = sleepers.filter { $0.value.deadline <= current }
-        for key in ready.keys { sleepers[key] = nil }
+        for key in ready.keys {
+            sleepers[key] = nil
+        }
         lock.unlock()
         for sleeper in ready.values.sorted(by: { $0.deadline < $1.deadline }) {
             sleeper.continuation.resume()

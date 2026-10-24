@@ -17,7 +17,9 @@ enum TickKey: ServiceKey { typealias Value = Int }
 
 @CordisActor
 func settle(until condition: () -> Bool) async {
-    for _ in 0..<10_000 where !condition() { await Task.yield() }
+    for _ in 0 ..< 10_000 where !condition() {
+        await Task.yield()
+    }
 }
 
 @CordisActor
@@ -51,7 +53,7 @@ struct TimerTests {
         let clock = ManualClock()
         let counter = Counter()
         try await app.every(.seconds(1), clock: clock) { counter.value += 1 }
-        for expected in 1...3 {
+        for expected in 1 ... 3 {
             await waitForSleepers(clock, 1)
             clock.advance(by: .seconds(1))
             await settle { counter.value == expected }

@@ -1,6 +1,7 @@
 import CordisKernel
 
 extension Context {
+    /// Runs `body` once after `delay`; cancelled when this context is disposed.
     @discardableResult
     public func after(
         _ delay: Duration,
@@ -19,6 +20,7 @@ extension Context {
         }
     }
 
+    /// Runs `body` every `interval`; cancelled when this context is disposed.
     @discardableResult
     public func every(
         _ interval: Duration,
