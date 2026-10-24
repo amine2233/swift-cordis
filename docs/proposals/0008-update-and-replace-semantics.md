@@ -2,7 +2,7 @@
 id: "0008"
 title: "Update and replace semantics"
 type: mini
-status: in-review
+status: accepted
 authors: ["Amine BENSALAH <amine.bensalah@intech-consulting.fr>"]
 reviewers: []
 decider: "Amine BENSALAH"
@@ -72,7 +72,9 @@ Compatibility: observable change only for equal configs (fewer restarts); a call
 
 ## Decision
 
-<!-- Filled at closing. -->
+**Accepted** on 2026-10-24 by Amine BENSALAH.
+
+Conditions: a single `update` (no second overload); `Fork` stores the last successfully applied config as `Any?`, recorded only when the fork reaches `.active`; `update` skips only when the fork is `.active` and `config as? any Equatable` equals the stored one. No `replace`/`era_swap` equivalent is added. `update` keeps its current return type in this change; reconcile with 0007's `UpdateOutcome` when both are merged.
 
 ## Amendments
 
