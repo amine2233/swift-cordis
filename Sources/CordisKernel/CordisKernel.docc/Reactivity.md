@@ -16,11 +16,11 @@ A ``Fork`` is one application of a plugin in a context. Its ``Fork/Status`` move
 
 ## What triggers a transition
 
-Each provided service gets a **generation** number. A fork remembers the generations it started with and compares them
-on every change of a slot it injects:
+Each `provide` creates a new **occurrence** of a service. A fork remembers the occurrences it started with and compares them
+on every change of a slot it injects (`ctx.update` mutates an occurrence in place and restarts nothing):
 
 - required service missing: stop, back to `pending`;
-- a service it injects was replaced (new generation): stop, then start again;
+- a service it injects was replaced (new occurrence): stop, then start again;
 - an optional service appeared or vanished: restart;
 - an unrelated slot changed: nothing happens.
 
