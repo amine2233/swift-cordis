@@ -2,7 +2,7 @@
 id: "0001"
 title: "Attempt-all teardown with failure reporting"
 type: mini
-status: in-review
+status: accepted
 authors: ["Amine BENSALAH <amine.bensalah@intech-consulting.fr>"]
 reviewers: []
 decider: "Amine BENSALAH"
@@ -75,7 +75,9 @@ Compatibility: source-compatible for closure authors and for `Disposable` caller
 
 ## Decision
 
-<!-- Filled at closing. -->
+**Accepted** on 2026-10-24 by Amine BENSALAH.
+
+Conditions: `Disposable` stays non-throwing; only the `Disposer` input type widens. `Scope` receives an internal failure handler wired by `Context.root()` to `registry.emit(TeardownFailed(plugin:error:))`; `plugin` is the owning context name (`root` when none). Open question 1 resolved: `error` is `any Error`, as in `PluginFailed`.
 
 ## Amendments
 
