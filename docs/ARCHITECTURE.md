@@ -90,6 +90,16 @@ There is deliberately no `replace` / era-swap equivalent: cordis-rs fixes depend
 retarget them, whereas `Fork.resolve()` re-reads the edges on every reconcile, so a plain restart already retargets.
 Dispose and load again for a fresh identity.
 
+## Loader
+
+`CordisLoader` (separate target, Foundation only) loads plugins from declarative JSON-configured entries. A `PluginRegistry`
+maps a string resolve key to a plugin type plus a type-erased decode closure, so the plugin owns its `Config` type and the
+registry owns decoding. A `LoadPlan` is an ordered list of entries (`key`, optional `name`, optional JSON `config`).
+`plan.validate(against:)` collects every error (`LoaderError`: unknown key, duplicate name, config that fails to decode).
+`ctx.load(plan, registry:)` validates first; an invalid plan loads nothing and every entry is reported failed. Otherwise entries
+load in plan order and each `LoadOutcome` carries the status read once `ctx.plugin` returns (`pending`, `active` or `failed`:
+plugins stay pending until their services exist). A failed entry does not stop the others. Strings never enter `CordisKernel`.
+
 ## Tests
 
-`swift test`: `CordisKernelTests` covers scope, graph, lifecycle and cascade invariants; `CordisTests` covers `ServicePlugin` and timers.
+`swift test`: `CordisKernelTests` covers scope, graph, lifecycle and cascade invariants; `CordisTests` covers `ServicePlugin` and timers; `CordisLoaderTests` covers the loader.
